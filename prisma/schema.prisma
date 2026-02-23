@@ -1,0 +1,197 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String
+  // orders    Order[]
+  addresses Address[]
+
+  role      Role     @default(ONLINE_CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // orders    Order[]
+}
+
+enum Role {
+  ONLINE_CUSTOMER
+  OFFLINE_CUSTOMER
+  ADMIN
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String
+
+  label     String // "Home", "Office"
+  line1     String
+  line2     String?
+  city      String
+  latitude  Float?
+  longitude Float?
+
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// model Restaurant {
+//   id             String         @id @default(cuid())
+//   name           String
+//   slug           String         @unique
+//   description    String?
+//   logoUrl        String?
+//   branches       Branch[]
+//   createdAt      DateTime       @default(now())
+//   updatedAt      DateTime       @updatedAt
+// }
+
+// model Branch {
+//   id   String @id @default(cuid())
+//   name String
+
+//   addressLine1 String
+//   addressLine2 String?
+//   city         String
+//   postalCode   String
+//   country      String
+
+//   phone    String?
+//   isActive Boolean @default(true)
+
+//   restaurantId String
+//   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+//   createdAt      DateTime       @default(now())
+//   updatedAt      DateTime       @updatedAt
+//   menuCategories MenuCategory[]
+//   orders         Order[]
+// }
+
+// model MenuCategory {
+//   id       String @id @default(cuid())
+//   name     String
+//   position Int    @default(0)
+
+//   branchId String
+//   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+//   items MenuItem[]
+
+//   createdAt    DateTime    @default(now())
+//   updatedAt    DateTime    @updatedAt
+// }
+
+// model MenuItem {
+//   id          String  @id @default(cuid())
+//   name        String
+//   description String?
+//   price       Decimal @db.Decimal(10, 2)
+//   imageUrl    String?
+
+//   isAvailable Boolean @default(true)
+//   position    Int     @default(0)
+
+//   categoryId String
+//   category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+//   createdAt  DateTime    @default(now())
+//   updatedAt  DateTime    @updatedAt
+//   orderItems OrderItem[]
+// }
+
+// enum OrderStatus {
+//   PENDING
+//   ACCEPTED
+//   REJECTED
+//   PREPARING
+//   READY
+//   COMPLETED
+//   CANCELLED
+// }
+
+// model Order {
+//   id String @id @default(cuid())
+
+//   customerId String
+//   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+//   branchId String
+//   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+//   status OrderStatus @default(PENDING)
+
+//   totalAmount Decimal @db.Decimal(10, 2)
+
+//   deliveryName    String
+//   deliveryPhone   String
+//   deliveryAddress String
+
+//   items OrderItem[]
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model OrderItem {
+//   id String @id @default(cuid())
+
+//   orderId String
+//   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+//   menuItemId String
+//   menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+//   name     String
+//   price    Decimal @db.Decimal(10, 2)
+//   quantity Int
+
+//   subtotal Decimal @db.Decimal(10, 2)
+
+//   createdAt DateTime @default(now())
+// }
+
+
+model Restaurant {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  categories  Category[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  restaurant  Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  items       MenuItem[]
+}
+
+model MenuItem {
+  id         String   @id @default(cuid())
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+  name       String
+  description String?
+  price      Float
+  isAvailable Boolean @default(true)
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
