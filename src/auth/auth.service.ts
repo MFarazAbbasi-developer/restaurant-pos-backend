@@ -1,75 +1,59 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+// src/auth/auth.service.ts
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { LoginDto } from './dto/login.dto';
+import { Prisma } from '@prisma/client'; // <-- Add this import
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwt: JwtService,
+    private jwtService: JwtService,
   ) {}
 
-  async register(
-    name: string,
-    email: string,
-    password: string,
-    role: Role = Role.ONLINE_CUSTOMER,
-  ) {
-    const existing = await this.prisma.customer.findUnique({
-      where: { email },
-    });
+  async login(dto: LoginDto) {
+    // Explicitly type the OR conditions
+    const orConditions: Prisma.CustomerWhereInput[] = [];
 
-    if (existing) {
-      throw new BadRequestException('Email already in use');
+    if (dto.email) orConditions.push({ email: dto.email });
+    if (dto.phone) orConditions.push({ phone: dto.phone });
+
+    if (orConditions.length === 0) {
+      throw new UnauthorizedException('Email or phone is required');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const customer = await this.prisma.customer.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role,
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        OR: orConditions,
       },
     });
 
-    // const { password: _, ...result } = customer; // Exclude password from returned object
-    // return result;
-    return this.signToken(customer.id, customer.email, customer.role);
-  }
+    if (!customer) throw new UnauthorizedException('Invalid credentials');
 
-  async login(email: string, password: string) {
-    const customer = await this.prisma.customer.findUnique({
-      where: { email },
+    // Check password
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      customer.password,
+    );
+    if (!isPasswordValid)
+      throw new UnauthorizedException('Invalid credentials');
+
+    // Generate JWT
+    const token = this.jwtService.sign({
+      sub: customer.id,
+      role: customer.role,
     });
 
-    if (!customer) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const isMatch = await bcrypt.compare(password, customer.password);
-
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    return this.signToken(customer.id, customer.email, customer.role);
-  }
-
-  private signToken(userId: string, email: string, role: Role) {
     return {
-      access_token: this.jwt.sign({
-        sub: userId,
-        email,
-        role,
-      }),
+      accessToken: token,
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
     };
   }
 }
