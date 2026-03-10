@@ -18,7 +18,7 @@ model Customer {
   name     String  @db.VarChar(100)
   phone    String  @unique @db.VarChar(20)
   email    String? @unique @db.VarChar(100)
-  password String  @db.VarChar(255) // store hashed passwords only
+  password String  @db.VarChar(255)
   isActive Boolean @default(true)
   role     Role    @default(ONLINE_CUSTOMER)
 
@@ -31,7 +31,6 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Uncomment when orders are implemented
   orders Order[]
 }
 
@@ -163,7 +162,7 @@ model Order {
   customerId   String
   restaurantId String
 
-  totalAmount Float
+  totalAmount Decimal @db.Decimal(10, 2)
 
   status OrderStatus @default(PENDING)
 
@@ -190,7 +189,7 @@ model OrderItem {
   menuItemId String
 
   quantity Int
-  price    Float
+  price    Decimal @db.Decimal(10, 2)
 
   order    Order    @relation(fields: [orderId], references: [id])
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
@@ -203,7 +202,7 @@ model OrderDeal {
   dealId  String
 
   quantity Int
-  price    Float
+  price    Decimal @db.Decimal(10, 2)
 
   order Order @relation(fields: [orderId], references: [id])
   deal  Deal  @relation(fields: [dealId], references: [id])
