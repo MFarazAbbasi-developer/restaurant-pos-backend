@@ -22,17 +22,17 @@ model Customer {
   isActive Boolean @default(true)
   role     Role    @default(ONLINE_CUSTOMER)
 
-  street   String  @db.VarChar(150)
-  city     String  @db.VarChar(100)
-  state    String  @db.VarChar(100)
-  zipCode  String  @db.VarChar(20)
-  country  String  @db.VarChar(50)
+  street  String @db.VarChar(150)
+  city    String @db.VarChar(100)
+  state   String @db.VarChar(100)
+  zipCode String @db.VarChar(20)
+  country String @db.VarChar(50)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Uncomment when orders are implemented
-  // orders    Order[]
+  orders Order[]
 }
 
 model Restaurant {
@@ -47,6 +47,8 @@ model Restaurant {
   menuItems  MenuItem[]
   deals      Deal[]
   stations   PrintStation[]
+
+  orders Order[]
 }
 
 model PrintStation {
@@ -110,7 +112,8 @@ model MenuItem {
   station   PrintStation? @relation(fields: [stationId], references: [id])
   stationId String?
 
-  dealItems DealItem[]
+  dealItems  DealItem[]
+  orderItems OrderItem[]
 
   @@unique([externalId, restaurantId])
   @@index([restaurantId])
@@ -134,7 +137,8 @@ model Deal {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId String
 
-  dealItems DealItem[]
+  dealItems  DealItem[]
+  orderDeals OrderDeal[]
 
   @@unique([externalId, restaurantId])
   @@index([restaurantId])
@@ -151,4 +155,65 @@ model DealItem {
   menuItemId String
 
   @@unique([dealId, menuItemId])
+}
+
+model Order {
+  id String @id @default(cuid())
+
+  customerId   String
+  restaurantId String
+
+  totalAmount Float
+
+  status OrderStatus @default(PENDING)
+
+  street  String
+  city    String
+  state   String
+  zipCode String
+  country String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer   Customer   @relation(fields: [customerId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  items OrderItem[]
+  deals OrderDeal[]
+}
+
+model OrderItem {
+  id String @id @default(cuid())
+
+  orderId    String
+  menuItemId String
+
+  quantity Int
+  price    Float
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+model OrderDeal {
+  id String @id @default(cuid())
+
+  orderId String
+  dealId  String
+
+  quantity Int
+  price    Float
+
+  order Order @relation(fields: [orderId], references: [id])
+  deal  Deal  @relation(fields: [dealId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
 }
