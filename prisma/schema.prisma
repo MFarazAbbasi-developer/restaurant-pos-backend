@@ -164,13 +164,16 @@ model Order {
 
   totalAmount Decimal @db.Decimal(10, 2)
 
-  status OrderStatus @default(PENDING)
+  status     OrderStatus @default(PENDING)
+  acceptedAt DateTime?
 
   street  String
   city    String
   state   String
   zipCode String
   country String
+
+  isSynced Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -180,6 +183,9 @@ model Order {
 
   items OrderItem[]
   deals OrderDeal[]
+
+  @@index([restaurantId])
+  @@index([status])
 }
 
 model OrderItem {
@@ -187,25 +193,33 @@ model OrderItem {
 
   orderId    String
   menuItemId String
+  externalId Int
 
+  name     String
   quantity Int
   price    Decimal @db.Decimal(10, 2)
 
   order    Order    @relation(fields: [orderId], references: [id])
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
 }
 
 model OrderDeal {
   id String @id @default(cuid())
 
-  orderId String
-  dealId  String
+  orderId    String
+  dealId     String
+  externalId Int
 
+  name     String
   quantity Int
   price    Decimal @db.Decimal(10, 2)
 
   order Order @relation(fields: [orderId], references: [id])
   deal  Deal  @relation(fields: [dealId], references: [id])
+
+  @@index([orderId])
 }
 
 enum OrderStatus {
